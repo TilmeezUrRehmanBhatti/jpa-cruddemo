@@ -1,10 +1,10 @@
-package com.tilmeez.cruddemo.dao;
+package com.tilmeez.cruddemo.service;
 
 import com.tilmeez.cruddemo.entity.Employee;
 
 import java.util.List;
 
-public interface EmployeeDAO {
+public interface EmployeeService {
 
     public List<Employee> findAll();
 
