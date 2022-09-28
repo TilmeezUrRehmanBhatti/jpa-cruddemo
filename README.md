@@ -1,31 +1,64 @@
-## REST CRUD API with Hibernate
+## REST CRUD API with JPA
 
-REST API with Spring Boot that connects to a database
+**Application Architecture**
 
-<img src="https://user-images.githubusercontent.com/80107049/192886903-bfe24fa0-5194-4325-9871-34cab4397884.png" width="500" />
-
-
-**API Requirements**
-
-Create a REST API for the Employee Directory
-
-REST clients should be able to
-+ Get a list of employees
-+ Get a single employee by id
-+ Add a new employee
-+ Update an employee
-+ Delete an employee
+<img src="https://user-images.githubusercontent.com/80107049/192894636-bc88f23c-09e5-4e8a-a105-f5eea74aabd3.png" width="500" />
 
 
-**REST API**
+**What is JPA?**
 
-| HTTP Method | Endpoint                    | CRUD Action                 |
-| ----------- | --------------------------- | --------------------------- |
-| POST        | /api/employees              | Create a new employee       |
-| GET         | /api/employees              | Read a list of employees    |
-| GET         | /api/employees/{employeeId} | Read a single employee      |
-| PUT         | /api/employees              | Update an existing employee |
-| DELETE      | /api/employees/{employeeId} | Delete an existing employee |
++ Java Presistence API(JPA)
+    + Standard API for Object-to-Relation-Mapping (ORM)
+
++ Only a specification
+    + Defines a set of interfaces
+    + Requires an implementation to be usable
+
+**JPA - Vendor Implementations**
+
+<img src="https://user-images.githubusercontent.com/80107049/192894700-ee1efdf9-f5c2-4b55-b6a9-d50d7546d56d.png" wifth=500 />
+
+
+**What are Benefits of JPA**
+
++ By having a standard API, we are not locked to vendor's implementation
++ Maintain portable, flexible code by coding to JPA spec(interfaces)
++ Can theoretically  switch vendor implementations
+    + For example, if Vendor ABC stops supporting their product
+    + We could switch to Vendor XYZ without vendor lock in
+
+
+
+**Auto Data Source Configuration**
+
++ In Spring Boot, Hibernate is default implementation of JPA
++ **EntityManager** is similar to Hibernate **SessionFactory**
++ **EntityManager** can serve as a wrapper for Hibernate **Session** object
++ We can inject the **EntityManager** into our DAO
+
+**Various DAO Techniques**
+
++ Version 1: Use EntityManager but leverage native Hibernate API
++ Version 2: Use EntityManager and standard JPA API
++ Version 3: Spring Data JPA
+
+**Standard JSPA API**
+
++ The JPA API methods are similar to Native Hibernate API
++ JPA also support a query language: JPQL (JPQ Query Language)
+    + For more details on JPQL https://docs.oracle.com/javaee/7/tutorial/persistence-querylanguage.htm#BNBTG
+
+**Comparing JPA to Native Hibernate Methods**
+
+| Action                    | native Hibernate method      | JPA method                     |
+| ------------------------- | ---------------------------- | ------------------------------ |
+| Create/save new entity    | session.save(...)            | entityManager.persist(...)     |
+| Retrieve entity by id     | session.get(...) / load(...) | entitymanager.find(...)        |
+| Retrieve list of entities | session.createQuery(...)     | entityManager.createQuery(...) |
+| Save or update entity     | session.saveOrUpdate(...)    | entityManager.merge(...)       |
+| Delete entity             | session.delete(...)          | entityManager.remove(...)      |
+
++ High-level comparison, Other options depending on context ...
 
 
 **Development Process**
@@ -37,23 +70,6 @@ REST clients should be able to
 5. Add a new employee
 6. Update an existing employee
 7. Delete an existing employee
-
-**Application Architecture**
-
-<img src="https://user-images.githubusercontent.com/80107049/192887021-f4b6c120-4707-453f-92ff-49a5c0b2d361.png" width="500" />
-
-
-
-**Integrating Hibernate and JPA**
-
-_Development Process_
-
-1. Update db configuration in application.properties
-2. Create Employee entity
-3. Create DAO interface
-4. Create DAO implementation
-5. Create REST controller to use DAO
-
 
 **DAO Interface**
 
@@ -68,25 +84,21 @@ public interface EmployeeDAO
 
 ```JAVA
 @Repository
-public class EmployeeDAOHibernateImpl implements EmployeeDAO {
+public class EmployeeDAOJpaImpl implements EmployeeDAO {
   
   private EntityManager entityManager;
   
   @Autowired
-  public EmployeeDAOHibernateImpl (EntityManager theEntityManager) {
+  public EmployeeDAOJpaImpl (EntityManager theEntityManager) {
     entityManager = theEntityManager;
   }
   
   @Override
-  @Transactional
   public List<Employee> findAll() {
-    
-    // get the current hibernate session
-    Session currentSession = entityManager.unwrap(Session.class);
-    
+  
     // create a query
-    Query<Employee> theQuery = 
-      currentSession.createQuery("from Employee", Employee.class);
+    TypedQuery<Employee> theQuery = 
+      entityManager.createQuery("from Employee", Employee.class);
     
     // execute query and get result list
     List<Employee> employees = theQuery.getResultList();
@@ -95,6 +107,23 @@ public class EmployeeDAOHibernateImpl implements EmployeeDAO {
     return employees;
 }
 ```
-+ `EntityManager theEntityManager` Automatically created by Spring Boot
-+ We use here Constructor Injection
-+ `@Autowired`is optional because in spring latest version when class has one constructor then no need to use @Autowired  
+
+
+**Add or Update employee**
+
+```JAVA
+@Override
+public void save(Employee theEmployee) {
+  
+  // save or update the employee
+  Employee dbEmployee = entityManager.merge(theEmployee);
+  
+  // Update with id from db ... so we can get generated id for save/insert
+  theEmployee.setId(dbEmployee.getId());
+}
+```
+
++ `entityManager.merge(theEmployee)` if id == 0 then save/insert else update
++ `theEmployee.setId(dbEmployee.getId());` useful in our REST API to return generated id 
+
+
