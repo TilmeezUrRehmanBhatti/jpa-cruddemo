@@ -2,7 +2,7 @@
 
 **Application Architecture**
 
-<img src="https://user-images.githubusercontent.com/80107049/192894636-bc88f23c-09e5-4e8a-a105-f5eea74aabd3.png" width="500" />
+<img src="https://user-images.githubusercontent.com/80107049/193019388-0963115d-6fc8-471b-b5d3-652f16878345.png" width="500" />
 
 
 **What is JPA?**
